@@ -250,15 +250,14 @@ var productions = {
     
     // [14]    CharData    ::=    [^<&]* - ([^<&]* ']]>' [^<&]*)
     "CharData": {
-        type: TERMS_EXCEPTION,
+        type: TERMS_SEQUENCE,
         terms: [
-            {type: TERM_CHARSET, value: /[^<&]/, quantifier: QUANTIFIER_STAR},
             {
-                type: TERMS_SEQUENCE,
+                type: TERMS_EXCEPTION,
+                quantifier: QUANTIFIER_STAR,
                 terms: [
-                    {type: TERM_CHARSET, value: /[^<&]/, quantifier: QUANTIFIER_STAR},
-                    {type: TERM_LITERAL, value: "]]>"},
-                    {type: TERM_CHARSET, value: /[^<&]/, quantifier: QUANTIFIER_STAR}
+                    {type: TERM_CHARSET, value: /[^<&]/},
+                    {type: TERM_LITERAL, value: "]]>"}
                 ]
             }
         ]
@@ -311,16 +310,10 @@ var productions = {
                     {type: TERM_NONTERMINAL, value: "S"},
                     {
                         type: TERMS_EXCEPTION,
+                        quantifier: QUANTIFIER_STAR,
                         terms: [
-                            {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR},
-                            {
-                                type: TERMS_SEQUENCE,
-                                terms: [
-                                    {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR},
-                                    {type: TERM_LITERAL, value: "?>"},
-                                    {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR}
-                                ]
-                            }
+                            {type: TERM_NONTERMINAL, value: "Char"},
+                            {type: TERM_LITERAL, value: "?>"}
                         ]
                     }
                 ]
@@ -381,15 +374,14 @@ var productions = {
     
     // [20]    CData    ::=    (Char* - (Char* ']]>' Char*)) 
     "CData": {
-        type: TERMS_EXCEPTION,
+        type: TERMS_SEQUENCE,
         terms: [
-            {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR},
             {
-                type: TERMS_SEQUENCE,
+                type: TERMS_EXCEPTION,
+                quantifier: QUANTIFIER_STAR,
                 terms: [
-                    {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR},
-                    {type: TERM_LITERAL, value: "]]>"},
-                    {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR}
+                    {type: TERM_NONTERMINAL, value: "Char"},
+                    {type: TERM_LITERAL, value: "]]>"}
                 ]
             }
         ]
@@ -1067,21 +1059,20 @@ var productions = {
     
     // [65]    Ignore    ::=    Char* - (Char* ('<![' | ']]>') Char*) 
     "Ignore": {
-        type: TERMS_EXCEPTION,
+        type: TERMS_SEQUENCE,
         terms: [
-            {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR},
             {
-                type: TERMS_SEQUENCE,
+                type: TERMS_EXCEPTION,
+                quantifier: QUANTIFIER_STAR,
                 terms: [
-                    {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR},
+                    {type: TERM_NONTERMINAL, value: "Char"},
                     {
                         type: TERMS_OR,
                         terms: [
                             {type: TERM_LITERAL, value: "<!["},
                             {type: TERM_LITERAL, value: "]]>"}
                         ]
-                    },
-                    {type: TERM_NONTERMINAL, value: "Char", quantifier: QUANTIFIER_STAR}
+                    }
                 ]
             }
         ]
@@ -1391,14 +1382,27 @@ var productions = {
     }
 };
 
+var events = ["document", "Name", "Names", "EntityValue",
+    "AttValue", "SystemLiteral", "PubidLiteral", "CharData",
+    "Comment", "PI", "PITarget", "CDSect", "CData", "prolog",
+    "XMLDecl", "VersionInfo", "VersionNum", "doctypedecl",
+    "SDDecl", "element", "STag", "Attribute", "ETag", "content",
+    "EmptyElemTag", "Reference"];
 
 //
 //
 //
 
-function Parser(productions, handler)
+function Parser(productions, events, handler)
 {
     this.productions = productions;
+    this.events = new Object();
+    
+    for(var i = 0; i < events.length; i++)
+    {
+        this.events[events[i]] = true;
+    }
+    
     this.Handler = handler;
     this.Parse = Parser_Parse;
     this.MatchProduction = Parser_MatchProduction;
@@ -1410,7 +1414,7 @@ function Parser(productions, handler)
 
 function Parser_Parse(text, production)
 {
-    this.MatchProduction(text, production, 0);
+    return this.MatchProduction(text, production, 0);
 }
 
 function Parser_MatchProduction(text, production, index)
@@ -1420,10 +1424,12 @@ function Parser_MatchProduction(text, production, index)
         alert("ERROR: no production: " + production);
     }
     var match = this.MatchTerm(text, this.productions[production], index);
-    if(match != null)
+    if(match !== null && this.events[production])
+    //if(match !== null)
     {
         this.Handler(production, index, index + match);
     }
+    //else this.Handler("NOT " + production, index, index + match);
     
     return match;
 }
@@ -1433,7 +1439,7 @@ function Parser_MatchOrTerms(text, terms, index)
     var n;
     for(var i = 0; i < terms.length; i++)
     {
-        if((n = this.MatchTerm(text, terms[i], index)) != null)
+        if((n = this.MatchTerm(text, terms[i], index)) !== null)
             return n;
     }
     return null;
@@ -1446,7 +1452,7 @@ function Parser_MatchSequenceTerms(text, terms, index)
     
     for(var i = 0; i < terms.length; i++)
     {
-        if((n = this.MatchTerm(text, terms[i], newIndex)) != null)
+        if((n = this.MatchTerm(text, terms[i], newIndex)) !== null)
             newIndex += n;
         else return null;
     }
@@ -1456,9 +1462,9 @@ function Parser_MatchSequenceTerms(text, terms, index)
 function Parser_MatchExceptionTerms(text, terms, index)
 {
     var n;
-    if((n = this.MatchTerm(text, terms[0], index)) == null)
+    if((n = this.MatchTerm(text, terms[0], index)) === null)
         return null;
-    if((this.MatchTerm(text, terms[1], index)) != null)
+    if((this.MatchTerm(text, terms[1], index)) !== null)
         return null;
     return n;
 }
@@ -1493,14 +1499,12 @@ function Parser_MatchTerm(text, term, index)
             break;
             
         case TERM_CHARSET:
-            if(text.charAt(newIndex).match(term.value))
+            if(newIndex < text.length && text.charAt(newIndex).search(term.value) == 0)
                 n = 1;
             break;
             
         case TERM_LITERAL:
-            if((n = text.indexOf(term.value, newIndex)) != newIndex)
-                n = null;
-            else
+            if(newIndex < text.length && text.substr(newIndex, term.value.length) == term.value)
                 n = term.value.length;
             break;
             
@@ -1514,7 +1518,7 @@ function Parser_MatchTerm(text, term, index)
             newIndex += n;
             matches++;
         }
-    } while(more && n != null);
+    } while(more && n !== null);
     
     if(term.quantifier)
     {

@@ -4,20 +4,19 @@
 <title>XML Parser Test</title>
 <script type="text/javascript" src="xmlparser.js"></script>
 <script type="text/javascript">
-// <!CDATA[
+// <![CDATA[
 
-var parser, text;
+var parser, text, out = "";
 
 function writeEvent(prod, start, end)
 {
-    var box = document.getElementById("textOutput");
-    box.value += prod + ": (" + start + ", " + end + ") '";
-    box.value += text.substring(start, end) + "'\n";
+    out += prod + ": (" + start + ", " + end + ") \n";
+    //out += text.substring(start, end) + "'\n";
 }
 
 function window_onload()
 {
-    parser = new Parser(productions, writeEvent);
+    parser = new Parser(productions, events, writeEvent);
 }
 
 function buttonParse_onclick()
@@ -28,7 +27,24 @@ function buttonParse_onclick()
     text = new String(box.value);
     text = text.replace(/\r\n/g, "\n");
     text = text.replace(/\r/g, "\n");
-    parser.Parse(text, "document");
+    
+    var time1, time2, diff, cps, doc, s;
+    time1 = new Date().valueOf();
+    doc = parser.Parse(text, "document");
+    time2 = new Date().valueOf();
+    cps = (text.length * 1000 / (time2 - time1)) + "chars/sec";
+    diff = ((time2 - time1) / 1000) + "s"
+    if(doc)
+    {
+        s = "Document parse took " + diff + ", " + cps + ".";
+    }
+    else
+    {
+        s = "Parse error. " + diff + ", " + cps + ".";
+    }
+    status = s;
+    
+    outputBox.value = out;
 }
 
 // ]]>
@@ -38,7 +54,8 @@ function buttonParse_onclick()
 
 <p>XML Text:<br />
 <textarea rows="12" cols="80" id="textInput"></textarea></p>
-<p><button id="buttonParse" onclick="return buttonParse_onclick()">Parse</button></p>
+<p><button id="buttonParse" onclick="return buttonParse_onclick()">Parse</button>
+<span id="spanStatus"></span></p>
 <p>Parser output:<br />
 <textarea rows="12" cols="80" id="textOutput"></textarea></p>
 
