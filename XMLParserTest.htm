@@ -1,0 +1,46 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+<title>XML Parser Test</title>
+<script type="text/javascript" src="xmlparser.js"></script>
+<script type="text/javascript">
+// <!CDATA[
+
+var parser, text;
+
+function writeEvent(prod, start, end)
+{
+    var box = document.getElementById("textOutput");
+    box.value += prod + ": (" + start + ", " + end + ") '";
+    box.value += text.substring(start, end) + "'\n";
+}
+
+function window_onload()
+{
+    parser = new Parser(productions, writeEvent);
+}
+
+function buttonParse_onclick()
+{
+    var outputBox = document.getElementById("textOutput");
+    outputBox.value = "";
+    var box = document.getElementById("textInput");
+    text = new String(box.value);
+    text = text.replace(/\r\n/g, "\n");
+    text = text.replace(/\r/g, "\n");
+    parser.Parse(text, "document");
+}
+
+// ]]>
+</script>
+</head>
+<body onload="return window_onload()">
+
+<p>XML Text:<br />
+<textarea rows="12" cols="80" id="textInput"></textarea></p>
+<p><button id="buttonParse" onclick="return buttonParse_onclick()">Parse</button></p>
+<p>Parser output:<br />
+<textarea rows="12" cols="80" id="textOutput"></textarea></p>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+<title>Convert table to EBNF</title>
+<script type="text/javascript" src="xmlparser.js"></script>
+<script type="text/javascript">
+// <!CDATA[
+
+function window_onload()
+{
+    document.getElementById("textOutput").value = printEBNF(productions);
+}
+
+// ]]>
+</script>
+</head>
+<body onload="return window_onload()">
+<p>
+<textarea id="textOutput" rows="25" cols="92"></textarea>
+</p>
+</body>
+</html>
