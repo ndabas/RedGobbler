@@ -2,15 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head>
 <title>XML Parser Test</title>
+<script type="text/javascript" src="RedGobbler.js"></script>
 <script type="text/javascript" src="xmlparser.js"></script>
 <script type="text/javascript">
-// <![CDATA[
+// <!CDATA[
 
-var parser, text, out = "";
+var parser, text, out;
 
 function writeEvent(prod, start, end)
 {
-    out += prod + ": (" + start + ", " + end + ") \n";
+    out.push(prod + ": (" + start + ", " + end + ")");
     //out += text.substring(start, end) + "'\n";
 }
 
@@ -22,7 +23,7 @@ function window_onload()
 function buttonParse_onclick()
 {
     var outputBox = document.getElementById("textOutput");
-    outputBox.value = "";
+    out = new Array();
     var box = document.getElementById("textInput");
     text = new String(box.value);
     text = text.replace(/\r\n/g, "\n");
@@ -44,7 +45,7 @@ function buttonParse_onclick()
     }
     status = s;
     
-    outputBox.value = out;
+    outputBox.value = out.join("\n");
 }
 
 // ]]>
