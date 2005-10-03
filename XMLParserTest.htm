@@ -2,6 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head>
 <title>XML Parser Test</title>
+<script type="text/javascript" src="Instrument.js"></script>
 <script type="text/javascript" src="RedGobbler.js"></script>
 <script type="text/javascript" src="xmlparser.js"></script>
 <script type="text/javascript">
@@ -31,7 +32,7 @@ function buttonParse_onclick()
     
     var time1, time2, diff, cps, doc, s;
     time1 = new Date().valueOf();
-    doc = parser.Parse(text, "document");
+    doc = parser.parse(text, "document");
     time2 = new Date().valueOf();
     cps = (text.length * 1000 / (time2 - time1)) + "chars/sec";
     diff = ((time2 - time1) / 1000) + "s"
@@ -45,7 +46,7 @@ function buttonParse_onclick()
     }
     status = s;
     
-    outputBox.value = out.join("\n");
+    outputBox.value = out.join("\n") + "\r\n\r\n" + Instrument_report();
 }
 
 // ]]>

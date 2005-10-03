@@ -22,73 +22,77 @@ function Parser(productions, events, handler)
         this.events[events[i]] = true;
     }
     
-    this.Handler = handler;
-    this.Parse = Parser_Parse;
-    this.MatchProduction = Parser_MatchProduction;
-    this.MatchOrTerms = Parser_MatchOrTerms;
-    this.MatchSequenceTerms = Parser_MatchSequenceTerms;
-    this.MatchExceptionTerms = Parser_MatchExceptionTerms;
-    this.MatchTerm = Parser_MatchTerm;
+    this.handler = handler;
+    this.parse = Parser_parse;
+    this.matchProduction = Parser_matchProduction;
+    this.matchOrTerms = Parser_matchOrTerms;
+    this.matchSequenceTerms = Parser_matchSequenceTerms;
+    this.matchExceptionTerms = Parser_matchExceptionTerms;
+    this.matchTerm = Parser_matchTerm;
 }
 
-function Parser_Parse(text, production)
+function Parser_parse(text, production)
 {
-    return this.MatchProduction(text, production, 0);
+    this.text = text;
+    return this.matchProduction(production, 0);
 }
 
-function Parser_MatchProduction(text, production, index)
+function Parser_matchProduction(production, index)
 {
     if(!this.productions[production])
     {
         alert("ERROR: no production: " + production);
     }
-    var match = this.MatchTerm(text, this.productions[production], index);
+    
+    var match = this.matchTerm(this.productions[production], index);
     if(match !== null && this.events[production])
-    //if(match !== null)
     {
-        this.Handler(production, index, index + match);
+        this.handler(production, index, index + match);
     }
-    //else this.Handler("NOT " + production, index, index + match);
     
     return match;
 }
 
-function Parser_MatchOrTerms(text, terms, index)
+function Parser_matchOrTerms(terms, index)
 {
     var n;
     for(var i = 0; i < terms.length; i++)
     {
-        if((n = this.MatchTerm(text, terms[i], index)) !== null)
+        if((n = this.matchTerm(terms[i], index)) !== null)
             return n;
     }
+    
     return null;
 }
 
-function Parser_MatchSequenceTerms(text, terms, index)
+function Parser_matchSequenceTerms(terms, index)
 {
     var n;
     var newIndex = index;
     
     for(var i = 0; i < terms.length; i++)
     {
-        if((n = this.MatchTerm(text, terms[i], newIndex)) !== null)
+        if((n = this.matchTerm(terms[i], newIndex)) !== null)
             newIndex += n;
         else return null;
     }
+    
     return newIndex - index;
 }
 
-function Parser_MatchExceptionTerms(text, terms, index)
+function Parser_matchExceptionTerms(terms, index)
 {
     var n;
-    if((n = this.MatchTerm(text, terms[0], index)) === null)
+    if((n = this.matchTerm(terms[0], index)) === null)
         return null;
-    if((this.MatchTerm(text, terms[1], index)) !== null)
+    
+    if((this.matchTerm(terms[1], index)) !== null)
         return null;
+    
     return n;
 }
 
-function Parser_MatchTerm(text, term, index)
+function Parser_matchTerm(term, index)
 {
     var n, matches = 0, newIndex = index;
     var more = false;
@@ -106,29 +110,29 @@ function Parser_MatchTerm(text, term, index)
         switch(term.type)
         {
         case TERMS_OR:
-            n = this.MatchOrTerms(text, term.terms, newIndex);
+            n = this.matchOrTerms(term.terms, newIndex);
             break;
             
         case TERMS_SEQUENCE:
-            n = this.MatchSequenceTerms(text, term.terms, newIndex);
+            n = this.matchSequenceTerms(term.terms, newIndex);
             break;
             
         case TERMS_EXCEPTION:
-            n = this.MatchExceptionTerms(text, term.terms, newIndex);
+            n = this.matchExceptionTerms(term.terms, newIndex);
             break;
             
         case TERM_CHARSET:
-            if(newIndex < text.length && text.charAt(newIndex).search(term.value) == 0)
+            if(newIndex < this.text.length && term.value.test(this.text.charAt(newIndex)))
                 n = 1;
             break;
             
         case TERM_LITERAL:
-            if(newIndex < text.length && text.substr(newIndex, term.value.length) == term.value)
+            if(newIndex < this.text.length && this.text.substr(newIndex, term.value.length) == term.value)
                 n = term.value.length;
             break;
             
         case TERM_NONTERMINAL:
-            n = this.MatchProduction(text, term.value, newIndex)
+            n = this.matchProduction(term.value, newIndex)
             break;
         }
         
