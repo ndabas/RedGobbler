@@ -1,0 +1,35 @@
+[1]  grammar    ::= Rule+
+
+[2]  S          ::= (#x20 | #x9 | #xD | #xA)+  - "\n\n"
+
+[3]  Rule       ::= RuleNumber S Production S? '\n\n' S?
+
+[4]  RuleNumber ::= '[' [0-9]+ [a-zA-Z]* ']'
+
+[5]  Production ::= Symbol S "::=" S Expression
+
+[6]  Symbol     ::= [a-zA-Z_] [a-zA-Z_0-9]*
+
+[7]  Expression ::= Term (S? '|' S? Term)*
+
+[8]  Term       ::= Exception (S? (Exception | VC | WFC))*
+
+[9]  VC         ::= '[' S? [vV] [cC] ':' [^\]]* ']'
+
+[10] WFC        ::= '[' S? [wW] [fF] [cC] ':' [^\]]* ']'
+
+[11] Exception  ::= Factor (S '-' S Factor)?
+
+[12] Factor     ::= (Symbol | HexChar | Charset | Literal | (S? '(' S? Expression S? ')' S?)) Quantifier?
+
+[13] Quantifier ::= '*' | '+' | '?'
+
+[14] HexChar    ::= '#x' [0-9a-fA-F]+
+
+[15] Charset    ::= '[' '^'? (CharRange | Char | '-') (CharRange | Char)* ']'
+
+[16] Char       ::= [^-\]]
+
+[17] CharRange  ::= (Char '-' Char) | (HexChar '-' HexChar)
+
+[18] Literal    ::= '"' [^"]* '"' | "'" [^']* "'"

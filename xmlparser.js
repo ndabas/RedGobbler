@@ -24,8 +24,7 @@ var productions = {
     // [3]    S    ::=    (#x20 | #x9 | #xD | #xA)+ 
     "S": {
         type: TERMS_SEQUENCE,
-        quantifier: QUANTIFIER_PLUS,
-        terms: [ {type: TERM_CHARSET, value: /[\u0020\u0009\u000D\u000A]/} ]
+        terms: [ {type: TERM_CHARSET, value: /[\u0020\u0009\u000D\u000A]/, quantifier: QUANTIFIER_PLUS} ]
     },
     
     // [4]    NameChar    ::=    Letter | Digit | '.' | '-' | '_' | ':' | CombiningChar | Extender 
@@ -34,10 +33,7 @@ var productions = {
         terms: [
             {type: TERM_NONTERMINAL, value: "Letter"},
             {type: TERM_NONTERMINAL, value: "Digit"},
-            {type: TERM_LITERAL, value: "."},
-            {type: TERM_LITERAL, value: "-"},
-            {type: TERM_LITERAL, value: "_"},
-            {type: TERM_LITERAL, value: ":"},
+            {type: TERM_CHARSET, value: /[\.\-_:]/},
             {type: TERM_NONTERMINAL, value: "CombiningChar"},
             {type: TERM_NONTERMINAL, value: "Extender"}
         ]
@@ -49,8 +45,7 @@ var productions = {
         terms: [
             {type: TERMS_OR, terms: [
                     {type: TERM_NONTERMINAL, value: "Letter"},
-                    {type: TERM_LITERAL, value: "_"},
-                    {type: TERM_LITERAL, value: ":"}
+                    {type: TERM_CHARSET, value: /[_:]/}
                 ]
             },
             {type: TERM_NONTERMINAL, value: "NameChar", quantifier: QUANTIFIER_STAR}

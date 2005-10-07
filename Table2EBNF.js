@@ -10,7 +10,7 @@ function printEBNF(p)
     for(prod in p)
     {
         s += "[" + i++ + "] ";
-        s += prod + "\t ::= " + printTerms(p[prod]) + "\n";
+        s += prod + "\t ::= " + printTerms(p[prod]) + "\n\n";
     }
     s = s.replace(/[ ]+/g, " ");
     return s;
@@ -18,7 +18,7 @@ function printEBNF(p)
 
 function printTerms(prod)
 {
-    var s = new String();
+    var v, s = new String();
     var join;
     
     switch(prod.type)
@@ -38,9 +38,20 @@ function printTerms(prod)
     {
         if(prod.terms[i].type & 4)
         {
+            v = prod.terms[i].value.toString();
+            
             if(prod.terms[i].type == TERM_LITERAL)
+            {
                 s += "'";
-            s += prod.terms[i].value;
+                v = v.replace(/\n/g, "\\n");
+                v = v.replace(/\r/g, "\\r");
+                v = v.replace(/\t/g, "\\t");
+            }
+            
+            if(prod.terms[i].type == TERM_CHARSET)
+                v = v.substr(1, v.length - 2);
+            s += v;
+            
             if(prod.terms[i].type == TERM_LITERAL)
                 s += "'";
         }

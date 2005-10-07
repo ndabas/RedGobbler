@@ -1,18 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head>
-<title>XML Parser Test</title>
-<script type="text/javascript" src="Instrument.js"></script>
+<title>EBNF Parser Test</title>
 <script type="text/javascript" src="RedGobbler.js"></script>
-<script type="text/javascript" src="xmlparser.js"></script>
+<script type="text/javascript" src="ebnfparser.js"></script>
 <script type="text/javascript">
 // <![CDATA[
 
-var parser, text, out;
+var parser, text, out, start = 0, end = 0;
 
 function writeEvent(prod, start, end)
 {
-    out.push(prod + ": (" + start + ", " + end + ")");
+    out.push({production:prod, start:start, end:end});
     //out += text.substring(start, end) + "'\n";
 }
 
@@ -23,16 +22,17 @@ function window_onload()
 
 function buttonParse_onclick()
 {
-    var outputBox = document.getElementById("textOutput");
+    var outputBox = document.getElementById("selectOutput");
     out = new Array();
     var box = document.getElementById("textInput");
     text = new String(box.value);
     text = text.replace(/\r\n/g, "\n");
     text = text.replace(/\r/g, "\n");
+    box.value = text;
     
     var time1, time2, diff, cps, doc, s;
     time1 = new Date().valueOf();
-    doc = parser.parse(text, "document");
+    doc = parser.parse(text, "grammar");
     time2 = new Date().valueOf();
     cps = (text.length * 1000 / (time2 - time1)) + "chars/sec";
     diff = ((time2 - time1) / 1000) + "s"
@@ -44,9 +44,30 @@ function buttonParse_onclick()
     {
         s = "Parse error. " + diff + ", " + cps + ".";
     }
-    status = s;
+    window.status = s;
     
-    outputBox.value = out.join("\n") + "\r\n\r\n" + Instrument_report();
+    for(prod in out)
+    {
+        var opt = document.createElement("option");
+        opt.text = out[prod].production
+            + ": (" + out[prod].start + ", " + out[prod].end + ")";
+        opt.setAttribute("start", out[prod].start);
+        opt.setAttribute("end", out[prod].end);
+        outputBox.add(opt);
+    }
+}
+
+function selectOutput_onchange()
+{
+    var sel = document.getElementById("selectOutput");
+    var opt = sel.options[sel.selectedIndex];
+    start = opt.getAttribute("start");
+    end = opt.getAttribute("end");
+    var range = document.getElementById("textInput").createTextRange();
+    range.collapse();
+    range.moveStart("character", start);
+    range.moveEnd("character", end - start);
+    range.select();
 }
 
 // ]]>
@@ -54,12 +75,13 @@ function buttonParse_onclick()
 </head>
 <body onload="return window_onload()">
 
-<p>XML Text:<br />
-<textarea rows="12" cols="80" id="textInput"></textarea></p>
+<p>EBNF Text:<br />
+<textarea rows="10" cols="80" id="textInput"></textarea></p>
 <p><button id="buttonParse" onclick="return buttonParse_onclick()">Parse</button>
 <span id="spanStatus"></span></p>
 <p>Parser output:<br />
-<textarea rows="12" cols="80" id="textOutput"></textarea></p>
+<select size="10" style="width: 400px;" id="selectOutput" onchange="return selectOutput_onchange()"></select>
+</p>
 
 </body>
 </html>

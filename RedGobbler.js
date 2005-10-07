@@ -12,89 +12,47 @@ var QUANTIFIER_PLUS  = 1;
 var QUANTIFIER_STAR  = 2;
 var QUANTIFIER_QMARK = 3;
 
-function Parser(productions, events, handler)
+function RedGobbler(productions, events, handler)
 {
     this.productions = productions;
     this.events = new Object();
     
     for(var i = 0; i < events.length; i++)
-    {
         this.events[events[i]] = true;
-    }
     
     this.handler = handler;
-    this.parse = Parser_parse;
-    this.matchProduction = Parser_matchProduction;
-    this.matchOrTerms = Parser_matchOrTerms;
-    this.matchSequenceTerms = Parser_matchSequenceTerms;
-    this.matchExceptionTerms = Parser_matchExceptionTerms;
-    this.matchTerm = Parser_matchTerm;
+    this.parse = RedGobbler_parse;
+    this.callHandler = RedGobbler_callHandler;
+    this.matchTerm = RedGobbler_matchTerm;
 }
 
-function Parser_parse(text, production)
+function RedGobbler_parse(text, production)
 {
     this.text = text;
-    return this.matchProduction(production, 0);
-}
-
-function Parser_matchProduction(production, index)
-{
-    if(!this.productions[production])
-    {
-        alert("ERROR: no production: " + production);
-    }
+    this.chars = new Array(this.text.length);
     
-    var match = this.matchTerm(this.productions[production], index);
-    if(match !== null && this.events[production])
-    {
-        this.handler(production, index, index + match);
-    }
+    for(var i = 0; i < this.chars.length; i++)
+        this.chars[i] = this.text.charAt(i);
     
-    return match;
-}
-
-function Parser_matchOrTerms(terms, index)
-{
-    var n;
-    for(var i = 0; i < terms.length; i++)
-    {
-        if((n = this.matchTerm(terms[i], index)) !== null)
-            return n;
-    }
+    for(p in this.productions)
+        this.productions[p].matches = new Array();
     
-    return null;
-}
-
-function Parser_matchSequenceTerms(terms, index)
-{
-    var n;
-    var newIndex = index;
-    
-    for(var i = 0; i < terms.length; i++)
-    {
-        if((n = this.matchTerm(terms[i], newIndex)) !== null)
-            newIndex += n;
-        else return null;
-    }
-    
-    return newIndex - index;
-}
-
-function Parser_matchExceptionTerms(terms, index)
-{
-    var n;
-    if((n = this.matchTerm(terms[0], index)) === null)
-        return null;
-    
-    if((this.matchTerm(terms[1], index)) !== null)
-        return null;
+    var n = this.matchTerm(this.productions[production], 0);
+    if(n !== null)
+        this.callHandler(production, 0, n);
     
     return n;
 }
 
-function Parser_matchTerm(term, index)
+function RedGobbler_callHandler(production, index, length)
 {
-    var n, matches = 0, newIndex = index;
+    if(this.events[production])
+        this.handler(production, index, index + length);
+}
+
+function RedGobbler_matchTerm(term, index)
+{
+    var tn, n, matches = 0, newIndex = index, tindex;
     var more = false;
     
     if(term.quantifier &&
@@ -110,29 +68,60 @@ function Parser_matchTerm(term, index)
         switch(term.type)
         {
         case TERMS_OR:
-            n = this.matchOrTerms(term.terms, newIndex);
+            for(var i = 0; i < term.terms.length; i++)
+            {
+                if((n = this.matchTerm(term.terms[i], newIndex)) !== null)
+                    break;
+            }
+            
             break;
             
         case TERMS_SEQUENCE:
-            n = this.matchSequenceTerms(term.terms, newIndex);
+            tindex = newIndex;
+            
+            for(var i = 0; i < term.terms.length; i++)
+            {
+                if((tn = this.matchTerm(term.terms[i], tindex)) !== null)
+                    tindex += tn;
+                else break;
+            }
+            
+            if(tn !== null)
+                n = tindex - newIndex;
+            
             break;
             
         case TERMS_EXCEPTION:
-            n = this.matchExceptionTerms(term.terms, newIndex);
+            if((n = this.matchTerm(term.terms[0], newIndex)) === null)
+                break;
+    
+            if((this.matchTerm(term.terms[1], newIndex)) !== null)
+                n = null;
+    
             break;
             
         case TERM_CHARSET:
-            if(newIndex < this.text.length && term.value.test(this.text.charAt(newIndex)))
+            if(newIndex < this.text.length && term.value.test(this.chars[newIndex]))
                 n = 1;
+            
             break;
             
         case TERM_LITERAL:
             if(newIndex < this.text.length && this.text.substr(newIndex, term.value.length) == term.value)
                 n = term.value.length;
+            
             break;
             
         case TERM_NONTERMINAL:
-            n = this.matchProduction(term.value, newIndex)
+            if((n = this.productions[term.value].matches[newIndex]) == undefined)
+            {
+                n = this.matchTerm(this.productions[term.value], newIndex);
+                this.productions[term.value].matches[newIndex] = n;
+            }
+            
+            if(n !== null)
+                this.callHandler(term.value, newIndex, n);
+            
             break;
         }
         

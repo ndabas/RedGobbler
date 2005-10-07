@@ -1,21 +1,142 @@
-rule ::= symbol '::=' expression
+stop:
+          syntax EOF
+        | syntax text EOF
+        ;
 
-symbol ::= [a-zA-Z_] ([a-zA-Z0-9_])*
+syntax:
+          { rule }
+        ;
 
-expression ::= term ('|' term)*
+rule:
+          misc rules "[\\n\\n]"
+          ;
 
-term ::= '('? cterm '-' cterm ')'? quantifier?
+rules:
+          ( onerule )+
+          ;
 
-cterm ::= (hexChar | charSet | literal)+
+onerule:
+          rulenumber rulekernel
+          ;
 
-hexchar ::= '#x' [0-9a-f]+
+rulekernel:
+          identifier "::=" expression
+        ;
+expression:
+          term { '|' term }
+        ;
 
-charset ::= '[' '^'? (charrange | char)+ ']'
+term:
+          difference { difference | wfc | vc }
+        ;
 
-charrange ::= hexchar '-' heaxhar | char '-' char
+factor:
+          multiplicand
+        | multiplicand multiplicator
+        | '['  expression  ']'
+        | '{'  expression  '}'
+        ;
 
-char ::= [^-]]
+multiplicator:
+          '*'
+        | '+'
+        | '?'
+        ;
 
-literal ::=
+multiplicand:
+          primary
+        ;
 
-quantifier ::= '?' | '+' | '*'
+
+difference:
+          factor { '-' factor }
+        ;
+
+primary:
+          identifier
+        | charset
+        | quoted_symbol
+        | '('  expression  ')'
+        ;
+
+text:
+          textelement { textelement }
+        ;
+
+textelement:
+          identifier
+        | integer
+        | charset
+        | wfc
+        | vc
+        | quoted_symbol
+        | "::="
+        | "[\\n\\n]"
+
+         | '!'
+         | '"'
+         | '#'
+         | '$'
+         | '%'
+         | '&'
+         | '\\\''
+         | '('
+         | ')'
+         | '*'
+         | '+'
+         | ','
+         | '-'
+         | '.'
+         | '/'
+         | ':'
+         | ';'
+         | '<'
+         | '='
+         | '>'
+         | '?'
+         | '@'
+         | '['
+         | '\\\\'
+         | ']'
+         | '^'
+         | '_'
+         | '`'
+         | '{'
+         | '|'
+         | '}'
+        ;
+
+misc:
+          [ text ]
+        ;
+
+rulenumber:
+           "^[ \\t]*\\[[0-9]+[a-z]?\\]"
+         ;
+
+charset:
+           "#(x|X)[0-9a-fA-F]+"
+        | "\\[\\^?(#(x|X)[0-9a-fA-F]+(-#(x|X)[0-9a-fA-F]+)?)+\\]"
+        | "\\[\\^?\\]?[^]]*\\]"
+        ;
+
+wfc:
+          "\\[[ \\t]?(((v|V)(c|C)):[^]]*\\]"
+        ;
+
+vc:
+          "\\[[ \\t]?((w|W)(f|F)(c|C)):[^]]*\\]"
+        ;
+
+quoted_symbol:
+          "[\\\"\\'][^\"\\n]*[\\\"\\']"
+        ;
+
+integer:
+          "[0-9]+"
+        ;
+
+identifier:
+          "a-zA-Z_(a-zA-Z_|[0-9])*"
+        ;
+
